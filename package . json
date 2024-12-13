@@ -1,0 +1,10 @@
+{ 
+  "name": "playwright-ddt2", 
+  "version": "1.0.0",
+  "scripts": { 
+    "test": "playwright test"
+  }, 
+  "dependencies": {
+    "playwright": "^1.40.0"
+  } 
+}
