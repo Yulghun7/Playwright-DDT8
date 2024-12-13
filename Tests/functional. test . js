@@ -1,0 +1,33 @@
+const { test, expect } = require('@playwright/test'); 
+const fs = require('fs'); 
+
+// Load test data from JSON file 
+const testCases = JSON.parse(fs.readFileSync('./tests/testData.json', 'utf8')); 
+
+// Function to perform login 
+async function login(page) {
+  await page.goto('https://animated-gingersnap-8cf7f2.netlify.app/'); 
+  await page.fill('input[name="email"]', 'admin'); 
+  await page.fill('input[name="password"]', 'password123'); 
+  await page.click('button[type="submit"]'); 
+  await expect(page).toHaveURL(/dashboard/); // Ensure successful login 
+} 
+
+// Data-driven tests using JSON file 
+for (const testCase of testCases) { 
+  test(testCase.title, async ({ page }) => { await login(page);
+
+  // Navigate to the specified section 
+  await page.click(`text=${testCase.navigation}`); 
+
+  // Verify the task in the specified column 
+  const taskLocator = page.locator(`text=${testCase.task}`); 
+  await expect(taskLocator).toBeVisible(); 
+
+  // Verify the task's tags 
+  for (const tag of testCase.tags) { 
+    const tagLocator = page.locator(`text=${tag}`); 
+    await expect(tagLocator).toBeVisible(); 
+    } 
+  }); 
+}
