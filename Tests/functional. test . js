@@ -1,33 +1,131 @@
-const { test, expect } = require('@playwright/test'); 
-const fs = require('fs'); 
+const { test, expect } = require('@playwright/test');
 
-// Load test data from JSON file 
-const testCases = JSON.parse(fs.readFileSync('./tests/testData.json', 'utf8')); 
+const testCases = require('../data/testCases.json');
 
-// Function to perform login 
-async function login(page) {
-  await page.goto('https://animated-gingersnap-8cf7f2.netlify.app/'); 
-  await page.fill('input[name="email"]', 'admin'); 
-  await page.fill('input[name="password"]', 'password123'); 
-  await page.click('button[type="submit"]'); 
-  await expect(page).toHaveURL(/dashboard/); // Ensure successful login 
-} 
 
-// Data-driven tests using JSON file 
-for (const testCase of testCases) { 
-  test(testCase.title, async ({ page }) => { await login(page);
 
-  // Navigate to the specified section 
-  await page.click(`text=${testCase.navigation}`); 
+// A BasePage class for reusable UI actions
 
-  // Verify the task in the specified column 
-  const taskLocator = page.locator(`text=${testCase.task}`); 
-  await expect(taskLocator).toBeVisible(); 
+class BasePage {
 
-  // Verify the task's tags 
-  for (const tag of testCase.tags) { 
-    const tagLocator = page.locator(`text=${tag}`); 
-    await expect(tagLocator).toBeVisible(); 
-    } 
-  }); 
+  constructor(page) {
+
+    this.page = page;
+
+  }
+
+
+
+  async logAction(message) {
+
+    console.log(`\x1b[36m[INFO]\x1b[0m ${message}`); // Blue console log for actions
+
+  }
+
+
+
+  async login(email = 'admin', password = 'password123') {
+
+    await this.logAction('Navigating to the login page...');
+
+    await this.page.goto('https://animated-gingersnap-8cf7f2.netlify.app/');
+
+    await this.logAction('Filling out login credentials...');
+
+    await this.page.fill('input[name="email"]', email);
+
+    await this.page.fill('input[name="password"]', password);
+
+    await this.logAction('Submitting the login form...');
+
+    await this.page.click('button[type="submit"]');
+
+    await expect(this.page).toHaveURL(/dashboard/);
+
+    await this.logAction('Successfully logged in.');
+
+  }
+
+
+
+  async navigateToApp(appName) {
+
+    await this.logAction(`Navigating to the "${appName}" section...`);
+
+    await this.page.click(`text=${appName}`);
+
+    const urlFragment = appName.toLowerCase().replace(' ', '-');
+
+    await expect(this.page).toHaveURL(new RegExp(urlFragment));
+
+    await this.logAction(`Successfully navigated to "${appName}".`);
+
+  }
+
+
+
+  async validateTask(task, column, tags) {
+
+    const taskSelector = `.column:has-text("${column}") >> .task:has-text("${task}")`;
+
+
+
+    await this.logAction(`Validating that task "${task}" exists in the "${column}" column...`);
+
+    await expect(this.page.locator(taskSelector)).toBeVisible();
+
+
+
+    for (const tag of tags) {
+
+      await this.logAction(`Validating that task "${task}" has the tag "${tag}"...`);
+
+      await expect(this.page.locator(`${taskSelector} >> .tags:has-text("${tag}")`)).toBeVisible();
+
+    }
+
+    await this.logAction(`Task "${task}" validation complete.`);
+
+  }
+
 }
+
+
+
+// Main test suite
+
+test.describe('Fancy Data-Driven Test Suite', () => {
+
+  testCases.forEach(({ scenario, description, app, task, column, tags }) => {
+
+    test(`${scenario} - ${description}`, async ({ page }) => {
+
+      const basePage = new BasePage(page);
+
+
+
+      // Step 1: Log in
+
+      await basePage.login();
+
+
+
+      // Step 2: Navigate to the application section
+
+      await basePage.navigateToApp(app);
+
+
+
+      // Step 3: Validate the task and its tags
+
+      await basePage.validateTask(task, column, tags);
+
+
+
+      console.log(`\x1b[32m[SUCCESS]\x1b[0m ${scenario} passed successfully.`); // Green console log for success
+
+    });
+
+  });
+
+});
