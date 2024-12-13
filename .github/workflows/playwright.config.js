@@ -5,5 +5,8 @@ module.exports = defineConfig({
   use: { 
     headless: true, // Run tests in headless mode 
     viewport: { width: 1280, height: 720 }, // Default browser size 
+    
+    actionTimeout: 5000,
+    baseURL: 'https://animated-gingersnap-8cf7f2.netlify.app/'
     }, 
 });
